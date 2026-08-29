@@ -1,0 +1,110 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, reopened, edited]
+
+# Only one triage run per issue: an edit shortly after opening cancels the older run.
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    # Skip issues that explicitly call @claude — claude.yml already handles those.
+    if: |
+      !contains(github.event.issue.body, '@claude') &&
+      !contains(github.event.issue.title, '@claude')
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Triage and diagnose issue
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --allowedTools "Read,Glob,Grep,Bash(gh label list:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*)"
+          prompt: |
+            Eres el triador de issues del repositorio ${{ github.repository }},
+            un Tetris en JavaScript puro + HTML5 Canvas (`index.html`, `style.css`, `game.js`).
+
+            Trabaja sobre el issue #${{ github.event.issue.number }}.
+
+            ## Paso 1 — Leer el issue
+            Ejecuta `gh issue view ${{ github.event.issue.number }} --json title,body,labels,author`
+            para obtener el contenido y las etiquetas que ya tenga.
+
+            ## Paso 2 — Etiquetar
+            Ejecuta `gh label list` y elige SOLO etiquetas que ya existan en el repositorio.
+            Aplica entre 1 y 3, las que mejor describan el issue, con:
+            `gh issue edit ${{ github.event.issue.number }} --add-label "<etiqueta>,<etiqueta>"`
+
+            Criterio:
+            - `bug` — algo funciona mal o de forma distinta a lo esperado.
+            - `enhancement` — nueva funcionalidad o mejora de una existente.
+            - `documentation` — README, CLAUDE.md o comentarios.
+            - `question` — duda, no un cambio de código.
+            - `accessibility` — teclado, contraste, lectores de pantalla, daltonismo.
+            - `good first issue` — cambio pequeño, localizado y de bajo riesgo.
+            - `invalid` / `duplicate` / `wontfix` — solo si es evidente.
+
+            No inventes ni crees etiquetas nuevas. No quites las que ya estén puestas.
+            Si ninguna encaja con confianza, no añadas ninguna y dilo en el diagnóstico.
+
+            ## Paso 3 — Diagnóstico
+            Lee el código relevante (`game.js`, `index.html`, `style.css`, `CLAUDE.md`)
+            antes de opinar. El objetivo es que quien implemente la solución —persona o
+            Claude— pueda empezar a escribir código directamente desde tu diagnóstico.
+
+            Publícalo como comentario con:
+            `gh issue comment ${{ github.event.issue.number }} --body "<markdown>"`
+
+            Usa exactamente esta estructura:
+
+            ## 🔍 Diagnóstico automático
+
+            **Resumen:** una o dos frases sobre qué se pide realmente.
+
+            **Etiquetas aplicadas:** las que pusiste, con una línea de justificación.
+
+            **Zona del código:** archivos y funciones concretas con número de línea
+            (`game.js:120`, `draw()`, `clearLines()`…). Si no lo localizas, dilo en vez
+            de adivinar.
+
+            **Causa probable / enfoque:** para un bug, la mecánica que falla; para una
+            mejora, dónde encaja en la arquitectura actual.
+
+            **Pasos sugeridos:** lista numerada y accionable de los cambios a realizar.
+
+            **Riesgos y efectos colaterales:** menciona explícitamente si toca alguno
+            de los contratos documentados en CLAUDE.md:
+            - el contrato de índice-color (`PIECES[n]` contiene `n`, que indexa `COLORS[n]`,
+              ambos con padding `null` en la posición 0),
+            - las constantes acopladas (`COLS`/`ROWS`/`BLOCK` con los atributos
+              `width`/`height` de `<canvas id="board">` a 300×600, y `NB` con
+              `#next-canvas` a 120×120),
+            - `init()` como único punto de reset de todo el estado global,
+            - la pausa por `cancelAnimationFrame`, que obliga a reiniciar
+              `lastTime = performance.now()` al reanudar,
+            - `game.js` como script global no-módulo cargado al final de `<body>`.
+
+            **Información que falta:** solo si de verdad bloquea la implementación
+            (pasos de reproducción, navegador, comportamiento esperado).
+
+            ## Reglas
+            - Escribe en español, igual que el resto del proyecto.
+            - Sé concreto y breve; nada de relleno genérico.
+            - No modifiques archivos, no hagas commits ni abras PRs. Tu única salida son
+              la etiqueta y el comentario.
+            - Si el issue es demasiado vago para diagnosticarlo, dilo claramente y pide
+              lo mínimo imprescindible.
