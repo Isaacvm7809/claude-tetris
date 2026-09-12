@@ -220,3 +220,170 @@ kbd {
 #restart-btn:hover {
   background: var(--accent-hover);
 }
+
+/* ---- Tabla de récords ---- */
+:root {
+  --highlight-bg: rgba(122, 162, 247, 0.18);
+  --highlight-border: var(--accent);
+  --input-bg: #14141f;
+}
+
+body.light {
+  --highlight-bg: rgba(59, 91, 219, 0.12);
+  --highlight-border: var(--accent);
+  --input-bg: #ffffff;
+}
+
+.records-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 260px;
+}
+
+.records-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  counter-reset: rank;
+}
+
+.record-item {
+  counter-increment: rank;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  color: var(--text);
+}
+
+.record-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+}
+
+.record-row::before {
+  content: counter(rank) '.';
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+
+.record-item.highlight {
+  background: var(--highlight-bg);
+  border-color: var(--highlight-border);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.record-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-meta {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
+  padding-left: 2px;
+}
+
+.record-empty {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 8px 0;
+}
+
+.stats-line {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.stats-line span {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.name-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  max-width: 260px;
+}
+
+.name-entry label {
+  font-size: 12px;
+  color: var(--overlay-title);
+  font-weight: 700;
+  text-align: center;
+}
+
+#player-name-input {
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+#player-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.start-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 8px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.secondary-btn {
+  margin-top: 4px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.secondary-btn:hover {
+  border-color: var(--overlay-title);
+  color: var(--overlay-title);
+}
+
+#name-entry.hidden,
+#overlay-records-panel.hidden {
+  display: none;
+}
+
+/* Keep the header (theme toggle included) clickable above any full-bleed
+   overlay — .overlay/.start-overlay use position:absolute with the default
+   z-index:auto, which otherwise paints over in-flow static content. */
+.header-row {
+  position: relative;
+  z-index: 2;
+}
